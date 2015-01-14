@@ -47,8 +47,8 @@ Item{
     //The blur effect has to take into account the framerate
     property real mBlur: Math.sqrt(appSettings.burnIn)
     property real motionBlurCoefficient: Utils.lint(_minBlurCoefficient, _maxBlurCoefficient, mBlur)
-    property real _minBlurCoefficient: 0.2
-    property real _maxBlurCoefficient: 0.02
+    property real _minBlurCoefficient: 0.1
+    property real _maxBlurCoefficient: 0.01
 
     property size terminalSize: kterminal.terminalSize
     property size fontMetrics: kterminal.fontMetrics
@@ -231,12 +231,16 @@ Item{
         active: mBlur !== 0
 
         sourceComponent: ShaderEffectSource{
+            property int fps: appSettings.fps
+            property bool updateBlur: false
+
             id: _blurredSourceEffect
             sourceItem: blurredTerminalLoader.item
             recursive: true
-            live: true
             hideSource: true
             wrapMode: kterminalSource.wrapMode
+
+            live: fps === 0 && updateBlur
 
             visible: false
 
@@ -253,12 +257,13 @@ Item{
 
                 interval: (1 / motionBlurCoefficient) * 60 * 1.1
                 running: true
-                onTriggered: _blurredSourceEffect.live = false;
+                onTriggered: _blurredSourceEffect.updateBlur = false;
             }
             Connections{
                 target: kterminal
                 onImagePainted:{
-                    _blurredSourceEffect.live = true;
+                    _blurredSourceEffect.updateBlur = true;
+                    _blurredSourceEffect.scheduleUpdate();
                     livetimer.restart();
                 }
             }
@@ -295,7 +300,8 @@ Item{
         sourceComponent: ShaderEffect {
             property variant txt_source: kterminalSource
             property variant blurredSource: blurredSourceLoader.item
-            property real blurCoefficient: motionBlurCoefficient
+            property int fps: appSettings.fps !== 0 ? appSettings.fps : 60
+            property real blurCoefficient: motionBlurCoefficient * (60.0 / fps)
 
             blending: false
 

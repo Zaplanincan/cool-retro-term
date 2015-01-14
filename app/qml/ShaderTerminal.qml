@@ -26,7 +26,14 @@ ShaderEffect {
     property ShaderEffectSource blurredSource
     property ShaderEffectSource bloomSource
 
-    property real liveBlur: blurredSource && blurredSource.live ? 1.0 : 0.0
+    property real liveBlur: blurredSource && blurredSource.updateBlur ? 1.0 : 0.0
+    property int fps: appSettings.fps
+
+    onLiveBlurChanged: {
+        (liveBlur && fps
+            ? timeChanged.connect(blurredSource.scheduleUpdate)
+            : timeChanged.disconnect(blurredSource.scheduleUpdate));
+    }
 
     property color fontColor: appSettings.fontColor
     property color backgroundColor: appSettings.backgroundColor
